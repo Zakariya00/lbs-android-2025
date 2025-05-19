@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MACIntent</string>
+    <string name="button_text">Get Data and Exfiltrate</string>
+</resources>
