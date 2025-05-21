@@ -3,6 +3,7 @@ package lbs.lab.maclocation;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,6 +19,10 @@ import java.util.ArrayList;
  */
 public class DatabaseActivity extends AppCompatActivity {
 
+    /* --------------------------------------------- */
+    private static final String TAG = "DeputyApp";
+    /* --------------------------------------------- */
+
     // String keys for labelling data coming in or out
     public static final String ITEM_ACTION = "ITEM_ACTION";
     public static final String SET_ITEMS_ACTION = "SET_ITEMS_ACTION";
@@ -26,6 +31,8 @@ public class DatabaseActivity extends AppCompatActivity {
     public static final String ITEMS_GET = "ITEMS_GET";
 
     public static final String TYPE = DatabaseActivity.class.getCanonicalName();
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +47,15 @@ public class DatabaseActivity extends AppCompatActivity {
 
         if (sourceIntent.getType() == null || !sourceIntent.getType().equals(TYPE) || !getCallingActivity().getShortClassName().equals(
                 getPackageManager().getLaunchIntentForPackage(getPackageName()).getComponent().getShortClassName())) {
+            /* --------------------------------------------- */
+            Log.w(TAG, "Access denied: intent failed validation.");
+            /* --------------------------------------------- */
             setResult(Activity.RESULT_CANCELED, resultIntent);
         } else {
+            /* --------------------------------------------- */
+            Log.d(TAG, "Access granted: intent passed validation.");
+            /* --------------------------------------------- */
+
             // different actions based on what the Intent used to start this activity contains
             String action = sourceIntent.getStringExtra(ITEM_ACTION);
             ItemListOpenHelper mDB;
@@ -63,6 +77,14 @@ public class DatabaseActivity extends AppCompatActivity {
                     for (int i = 0; i < count; i++) {
                         returned.add(mDB.query(i));
                     }
+
+                    /* --------------------------------------------- */
+                    Log.d(TAG, "Returning " + returned.size() + " items to caller.");
+                    for (Item i : returned) {
+                        Log.d(TAG, "Returned Item: " + i.getTitle() + " | " + i.getInfo());
+                    }
+                    /* --------------------------------------------- */
+
                     // put the list of items into the result Intent
                     resultIntent.putExtra(DatabaseActivity.ITEMS_GET, returned);
                     setResult(Activity.RESULT_OK, resultIntent);
